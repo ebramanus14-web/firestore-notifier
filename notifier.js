@@ -46,20 +46,26 @@ async function checkFirestore() {
     for (const collectionRef of collections) {
       console.log(`📂 فحص Collection: ${collectionRef.id}`);
       
-      // البحث عن المستندات التي status = "success" و notificationSent ليس true
+      // استعلام بسيط: فقط status = "success"
       const snapshot = await collectionRef
         .where('status', '==', 'success')
-        .where('notificationSent', '!=', true)
         .get();
       
       if (snapshot.empty) {
-        console.log(`   لا توجد مستندات جديدة في ${collectionRef.id}`);
+        console.log(`   لا توجد مستندات في ${collectionRef.id}`);
         continue;
       }
       
-      // معالجة كل مستند
+      // فلترة المستندات يدوياً
       for (const doc of snapshot.docs) {
         const data = doc.data();
+        
+        // تحقق: هل تم إرسال الإشعار مسبقاً؟
+        if (data.notificationSent === true) {
+          console.log(`   تخطي المستند ${doc.id} - تم إرسال الإشعار مسبقاً`);
+          continue;
+        }
+        
         const projectId = data.project_id;
         
         if (projectId) {
@@ -68,7 +74,7 @@ async function checkFirestore() {
           // إرسال الإشعار
           await sendNotification(String(projectId));
           
-          // تحديث المستند
+          // تحديث المستند بإضافة الحقل الجديد
           await doc.ref.update({ notificationSent: true });
           console.log(`✅ تم تحديث المستند: ${doc.id}`);
         }
