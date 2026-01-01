@@ -5,7 +5,7 @@ on:
     - cron: '*/5 * * * *'  # كل 5 دقائق
   workflow_dispatch:  # للتشغيل اليدوي للاختبار
 
-# test trigger update  <<<<< اضفه هنا
+# cron activate test 3
 
 
 jobs:
