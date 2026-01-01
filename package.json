@@ -1,0 +1,13 @@
+{
+  "name": "firestore-notifier",
+  "version": "1.0.0",
+  "description": "Firebase Firestore to OneSignal notifier",
+  "main": "notifier.js",
+  "scripts": {
+    "start": "node notifier.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "node-fetch": "^2.7.0"
+  }
+}
