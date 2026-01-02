@@ -11,9 +11,6 @@ const db = admin.firestore();
 const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID;
 const ONESIGNAL_API_KEY = process.env.ONESIGNAL_API_KEY;
 
-// ✅ الـ Channel ID من OneSignal Dashboard
-const ANDROID_CHANNEL_ID = 'f169184d-40f6-4825-b557-649767261094';
-
 async function sendNotification(projectId) {
   try {
     const response = await fetch('https://onesignal.com/api/v1/notifications', {
@@ -24,8 +21,9 @@ async function sendNotification(projectId) {
       },
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
-        android_channel_id: ANDROID_CHANNEL_ID, // ✅ أضف هذا السطر
         included_segments: ['All'],
+        // ⚠️ لا تستخدم android_channel_id!
+        // OneSignal سيستخدم القناة الافتراضية (Miscellaneous) تلقائياً
         headings: { en: 'نجاح جديد' },
         contents: { en: projectId }
       })
@@ -35,15 +33,16 @@ async function sendNotification(projectId) {
     
     if (data.errors) {
       console.error('❌ خطأ من OneSignal:', data.errors);
-    } else {
-      console.log('✅ تم إرسال الإشعار:', projectId);
-      console.log('📱 عدد المستلمين:', data.recipients);
+      return null;
     }
+    
+    console.log('✅ تم إرسال الإشعار:', projectId);
+    console.log('📱 عدد المستلمين:', data.recipients || 0);
     
     return data;
   } catch (error) {
-    console.error('❌ خطأ في إرسال الإشعار:', error);
-    throw error;
+    console.error('❌ خطأ في إرسال الإشعار:', error.message);
+    return null;
   }
 }
 
@@ -83,18 +82,26 @@ async function checkFirestore() {
           console.log(`📤 إرسال إشعار للمشروع: ${projectId}`);
           
           // إرسال الإشعار
-          await sendNotification(String(projectId));
+          const result = await sendNotification(String(projectId));
           
-          // تحديث المستند بإضافة الحقل الجديد
-          await doc.ref.update({ notificationSent: true });
-          console.log(`✅ تم تحديث المستند: ${doc.id}`);
+          // تحديث المستند فقط إذا نجح الإرسال
+          if (result && !result.errors) {
+            await doc.ref.update({ notificationSent: true });
+            console.log(`✅ تم تحديث المستند: ${doc.id}`);
+          } else {
+            console.log(`⚠️ فشل إرسال الإشعار للمستند: ${doc.id}`);
+          }
+          
+          // انتظر قليلاً بين الإشعارات
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
     }
     
     console.log('✨ انتهى الفحص بنجاح');
   } catch (error) {
-    console.error('❌ خطأ في checkFirestore:', error);
+    console.error('❌ خطأ في checkFirestore:', error.message);
+    console.error(error.stack);
   }
 }
 
@@ -102,4 +109,7 @@ async function checkFirestore() {
 checkFirestore().then(() => {
   console.log('تم الانتهاء من التنفيذ');
   process.exit(0);
+}).catch((error) => {
+  console.error('خطأ غير متوقع:', error);
+  process.exit(1);
 });
