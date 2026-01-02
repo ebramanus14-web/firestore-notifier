@@ -21,9 +21,8 @@ async function sendNotification(projectId) {
       },
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
+        android_channel_id: 'f169184d-40f6-4825-b557-64976726f094', // ✅ الـ ID الصحيح
         included_segments: ['All'],
-        // ⚠️ لا تستخدم android_channel_id!
-        // OneSignal سيستخدم القناة الافتراضية (Miscellaneous) تلقائياً
         headings: { en: 'نجاح جديد' },
         contents: { en: projectId }
       })
