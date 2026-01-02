@@ -11,6 +11,9 @@ const db = admin.firestore();
 const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID;
 const ONESIGNAL_API_KEY = process.env.ONESIGNAL_API_KEY;
 
+// ✅ الـ Channel ID من OneSignal Dashboard
+const ANDROID_CHANNEL_ID = 'f169184d-40f6-4825-b557-649767261094';
+
 async function sendNotification(projectId) {
   try {
     const response = await fetch('https://onesignal.com/api/v1/notifications', {
@@ -21,6 +24,7 @@ async function sendNotification(projectId) {
       },
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
+        android_channel_id: ANDROID_CHANNEL_ID, // ✅ أضف هذا السطر
         included_segments: ['All'],
         headings: { en: 'نجاح جديد' },
         contents: { en: projectId }
@@ -28,7 +32,14 @@ async function sendNotification(projectId) {
     });
     
     const data = await response.json();
-    console.log('✅ تم إرسال الإشعار:', projectId);
+    
+    if (data.errors) {
+      console.error('❌ خطأ من OneSignal:', data.errors);
+    } else {
+      console.log('✅ تم إرسال الإشعار:', projectId);
+      console.log('📱 عدد المستلمين:', data.recipients);
+    }
+    
     return data;
   } catch (error) {
     console.error('❌ خطأ في إرسال الإشعار:', error);
